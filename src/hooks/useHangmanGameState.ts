@@ -1,7 +1,5 @@
-import { useState, useEffect } from 'react';
-import {GameState} from "../types";
-
-const LOCAL_STORAGE_KEY = 'hangmanGameState';
+import {useState, useEffect} from 'react';
+import {localStorageService} from '../services/LocalStorageService';
 
 export function useHangmanGameState() {
     const [selectedWord, setSelectedWord] = useState<string>('');
@@ -12,10 +10,10 @@ export function useHangmanGameState() {
 
     // Betöltés LocalStorage-ből
     useEffect(() => {
-        const savedState = localStorage.getItem(LOCAL_STORAGE_KEY);
+        const savedState = localStorageService.loadGameState();
 
         if (savedState) {
-            const { selectedWord, guessedLetters, wrongGuesses }: GameState = JSON.parse(savedState);
+            const { selectedWord, guessedLetters, wrongGuesses } = savedState;
 
             setSelectedWord(selectedWord);
             setGuessedLetters(guessedLetters);
@@ -29,19 +27,18 @@ export function useHangmanGameState() {
     // Mentés LocalStorage-be
     useEffect(() => {
         if (selectedWord) {
-            const gameState: GameState = {
+            localStorageService.saveGameState({
                 selectedWord,
                 guessedLetters,
                 wrongGuesses,
                 wordLength,
-            };
-            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(gameState));
+            });
         }
     }, [selectedWord, guessedLetters, wrongGuesses, wordLength]);
 
     // LocalStorage törlés új játékhoz
     const resetGameState = () => {
-        localStorage.removeItem(LOCAL_STORAGE_KEY);
+        localStorageService.clearGameState();
         setSelectedWord('');
         setGuessedLetters([]);
         setWrongGuesses(0);
