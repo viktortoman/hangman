@@ -1,11 +1,11 @@
-import {useEffect} from 'react';
-import {useLocation, useNavigate} from 'react-router-dom';
+import { useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import GameLayout from '../components/GameLayout';
-import {toast} from "react-toastify";
-import {GamePageState} from '../types';
+import { toast } from "react-toastify";
+import { GamePageState } from '../types';
 import HangmanDrawing from "../components/HangmanDrawing";
-import {useHangmanGameState} from '../hooks/useHangmanGameState';
-import {getRandomWord} from "../utils/randomWord.ts";
+import { useHangmanGameState } from '../hooks/useHangmanGameState';
+import { getRandomWord } from "../utils/randomWord";
 
 const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 
@@ -27,10 +27,39 @@ export default function GamePage() {
         isLoaded
     } = useHangmanGameState();
 
+    const maxWrongGuesses = 10;
+    const isGameWon = word && word.split('').every((letter) => guessedLetters.includes(letter));
+    const isGameLost = wrongGuesses >= maxWrongGuesses;
+
+    useEffect(() => {
+        if (isGameWon) {
+            toast.success('🎉 Congratulations, you won, start a new game! 🎉', {
+                position: "top-center",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                theme: "colored",
+            });
+        }
+
+        if (isGameLost) {
+            toast.error('You lost! Try again, start a new game!', {
+                position: "top-center",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                theme: "colored",
+            });
+        }
+    }, [isGameWon, isGameLost]);
+
     useEffect(() => {
         if (!isLoaded) return;
 
-        // Ha már van szó, akkor nem választunk újat (frissítés után)
         if (word) return;
 
         if (!state || !state.wordLength) {
@@ -47,7 +76,6 @@ export default function GamePage() {
         }
 
         const randomWord = getRandomWord(filteredWords);
-
         setWord(randomWord.toUpperCase());
         setWordLength(randomWord.length);
     }, [state, navigate, word, setWord, wordLength, setWordLength, isLoaded]);
@@ -70,10 +98,6 @@ export default function GamePage() {
         resetGameState();
         navigate('/');
     };
-
-    const maxWrongGuesses = 10;
-    const isGameWon = word && word.split('').every((letter) => guessedLetters.includes(letter));
-    const isGameLost = wrongGuesses >= maxWrongGuesses;
 
     return (
         <GameLayout>
@@ -119,14 +143,16 @@ export default function GamePage() {
                         ))}
                     </div>
 
-                    {/* End Game / Start New Game gombok */}
                     <div className="flex flex-col md:flex-row gap-4 px-4 md:pl-8">
-                        <button
-                            onClick={handleEndGame}
-                            className="border rounded px-6 py-2 bg-white shadow-md uppercase hover:bg-gray-100"
-                        >
-                            End Game
-                        </button>
+                        {!isGameWon && !isGameLost && (
+                            <button
+                                onClick={handleEndGame}
+                                className="border rounded px-6 py-2 bg-white shadow-md uppercase hover:bg-gray-100"
+                            >
+                                End Game
+                            </button>
+                        )}
+
                         <button
                             onClick={handleStartNewGame}
                             className="border rounded px-6 py-2 bg-black text-white shadow-md uppercase hover:bg-gray-800"
