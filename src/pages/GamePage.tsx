@@ -1,13 +1,12 @@
-import { useEffect } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import {useEffect} from 'react';
+import {useLocation, useNavigate} from 'react-router-dom';
 import GameLayout from '../components/GameLayout';
-import { toast } from "react-toastify";
-import { GamePageState } from '../types';
+import {toast} from "react-toastify";
+import {GamePageState} from '../types';
 import HangmanDrawing from "../components/HangmanDrawing";
-import { useHangmanGameState } from '../hooks/useHangmanGameState';
-import { getRandomWord } from "../utils/randomWord";
-
-const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+import {useHangmanGameState} from '../hooks/useHangmanGameState';
+import {useWordLoader} from '../hooks/useLoadWord';
+import AlphabetButtons from "../components/AlphabetButtons.tsx";
 
 export default function GamePage() {
     const location = useLocation();
@@ -28,8 +27,16 @@ export default function GamePage() {
     } = useHangmanGameState();
 
     const maxWrongGuesses = 10;
-    const isGameWon = word && word.split('').every((letter) => guessedLetters.includes(letter));
+    const isGameWon = !!(word && word.split('').every((letter) => guessedLetters.includes(letter)));
     const isGameLost = wrongGuesses >= maxWrongGuesses;
+
+    useWordLoader({
+        isLoaded,
+        word,
+        state,
+        setWord,
+        setWordLength,
+    });
 
     useEffect(() => {
         if (isGameWon) {
@@ -57,29 +64,6 @@ export default function GamePage() {
         }
     }, [isGameWon, isGameLost]);
 
-    useEffect(() => {
-        if (!isLoaded) return;
-
-        if (word) return;
-
-        if (!state || !state.wordLength) {
-            navigate('/');
-            return;
-        }
-
-        const filteredWords = state.words.filter((w) => w.length === state.wordLength);
-
-        if (filteredWords.length === 0) {
-            toast.error('No words with that length!');
-            navigate('/');
-            return;
-        }
-
-        const randomWord = getRandomWord(filteredWords);
-        setWord(randomWord.toUpperCase());
-        setWordLength(randomWord.length);
-    }, [state, navigate, word, setWord, wordLength, setWordLength, isLoaded]);
-
     const handleLetterClick = (letter: string) => {
         if (guessedLetters.includes(letter)) return;
 
@@ -103,7 +87,7 @@ export default function GamePage() {
         <GameLayout>
             <div className="flex flex-col md:flex-row w-full items-center justify-center">
                 <div className="w-full md:w-1/3 flex items-center justify-center mb-8 md:mb-0">
-                    <HangmanDrawing wrongGuesses={wrongGuesses} />
+                    <HangmanDrawing wrongGuesses={wrongGuesses}/>
                 </div>
 
                 <div className="w-full md:w-2/3 text-center md:text-left pt-5">
@@ -119,7 +103,7 @@ export default function GamePage() {
                         {word?.split('').map((letter, idx) => (
                             <div
                                 key={idx}
-                                className="w-10 h-10 md:w-12 md:h-12 border border-black border-2 text-2xl flex items-center justify-center"
+                                className="w-10 h-10 md:w-12 md:h-12 border-black border-2 text-2xl flex items-center justify-center"
                             >
                                 {guessedLetters.includes(letter) || isGameLost ? letter : ''}
                             </div>
@@ -128,20 +112,12 @@ export default function GamePage() {
 
                     <p className="text-sm mb-4 px-4 md:pl-8">Play with a word</p>
 
-                    <div className="grid grid-cols-5 sm:grid-cols-7 gap-2 mb-6 px-4 md:px-8">
-                        {alphabet.map((letter) => (
-                            <button
-                                key={letter}
-                                onClick={() => handleLetterClick(letter)}
-                                disabled={guessedLetters.includes(letter) || isGameWon || isGameLost}
-                                className={`border rounded p-2 text-lg font-bold shadow-md ${
-                                    guessedLetters.includes(letter) ? 'text-gray-200' : 'bg-white'
-                                }`}
-                            >
-                                {letter}
-                            </button>
-                        ))}
-                    </div>
+                    <AlphabetButtons
+                        guessedLetters={guessedLetters}
+                        isGameWon={isGameWon}
+                        isGameLost={isGameLost}
+                        onLetterClick={handleLetterClick}
+                    />
 
                     <div className="flex flex-col md:flex-row gap-4 px-4 md:pl-8">
                         {!isGameWon && !isGameLost && (
